@@ -1,6 +1,8 @@
 StompKit
 ========
 
+**fork for tls integration**
+
 [![Build Status](https://travis-ci.org/mobile-web-messaging/StompKit.png?branch=master)](https://travis-ci.org/mobile-web-messaging/StompKit)
 
 STOMP Objective-C Client for iOS
