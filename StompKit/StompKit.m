@@ -15,7 +15,7 @@
 
 #pragma mark Logging macros
 
-#if 0 // set to 1 to enable logs
+#if 1 // set to 1 to enable logs
 
 #define LogDebug(frmt, ...) NSLog(frmt, ##__VA_ARGS__);
 
@@ -85,6 +85,10 @@
 @implementation STOMPFrame
 
 @synthesize command, headers, body;
+
+bool wantsTLS;
+NSMutableDictionary *connectHeaders;
+NSDictionary *tlsSettings;
 
 - (id)initWithCommand:(NSString *)theCommand
               headers:(NSDictionary *)theHeaders
@@ -341,8 +345,8 @@ CFAbsoluteTime serverActivity;
             self.connectionCompletionHandler(nil, err);
         }
     }
-
-    NSMutableDictionary *connectHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
+  
+    connectHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
     connectHeaders[kHeaderAcceptVersion] = kVersion1_2;
     if (!connectHeaders[kHeaderHost]) {
         connectHeaders[kHeaderHost] = host;
@@ -357,6 +361,28 @@ CFAbsoluteTime serverActivity;
                        headers:connectHeaders
                           body: nil];
 }
+
+- (void)connectSecureWithTLSOption:(NSDictionary *)options andHeaders:(NSDictionary *)headers
+         completionHandler:(void (^)(STOMPFrame *connectedFrame, NSError *error))completionHandler {
+
+  NSLog(@"TLS - Step 1: ");
+  NSLog(@"Options: %@", options);
+  
+  wantsTLS = TRUE;
+  tlsSettings = options;
+  connectHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
+  
+  self.connectionCompletionHandler = completionHandler;
+  
+  NSError *err;
+  if(![self.socket connectToHost:host onPort:port error:&err]) {
+    if (self.connectionCompletionHandler) {
+      self.connectionCompletionHandler(nil, err);
+    }
+  }
+  
+}
+
 
 - (void)sendTo:(NSString *)destination
           body:(NSString *)body {
@@ -570,7 +596,37 @@ CFAbsoluteTime serverActivity;
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port {
+  
+  if (wantsTLS) {
+    NSLog(@"TLS - Step 2: Did Connect");
+    [self.socket startTLS:tlsSettings];
+  } else {
     [self readFrame];
+  }
+  
+}
+
+- (void) socketDidSecure:(GCDAsyncSocket *)sock
+{
+  
+  NSLog(@"TLS - Step 3: Did Secure");
+  
+  connectHeaders[kHeaderAcceptVersion] = kVersion1_2;
+  if (!connectHeaders[kHeaderHost]) {
+    connectHeaders[kHeaderHost] = host;
+  }
+  if (!connectHeaders[kHeaderHeartBeat]) {
+    connectHeaders[kHeaderHeartBeat] = self.clientHeartBeat;
+  } else {
+    self.clientHeartBeat = connectHeaders[kHeaderHeartBeat];
+  }
+  
+  [self sendFrameWithCommand:kCommandConnect
+                     headers:connectHeaders
+                        body: nil];
+
+  
+  [self readFrame];
 }
 
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock

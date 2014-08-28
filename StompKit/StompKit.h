@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "GCDAsyncSocket.h"
 
 #pragma mark Frame headers
 
@@ -82,7 +83,7 @@ typedef void (^STOMPMessageHandler)(STOMPMessage *message);
 
 #pragma mark STOMP Client
 
-@interface STOMPClient : NSObject
+@interface STOMPClient : NSObject <GCDAsyncSocketDelegate>
 
 @property (nonatomic, copy) STOMPFrameHandler receiptHandler;
 @property (nonatomic, copy) void (^errorHandler)(NSError *error);
@@ -96,6 +97,8 @@ typedef void (^STOMPMessageHandler)(STOMPMessage *message);
        completionHandler:(void (^)(STOMPFrame *connectedFrame, NSError *error))completionHandler;
 - (void)connectWithHeaders:(NSDictionary *)headers
          completionHandler:(void (^)(STOMPFrame *connectedFrame, NSError *error))completionHandler;
+- (void)connectSecureWithTLSOption:(NSDictionary *)options andHeaders:(NSDictionary *)headers
+                 completionHandler:(void (^)(STOMPFrame *connectedFrame, NSError *error))completionHandler;
 
 - (void)sendTo:(NSString *)destination
           body:(NSString *)body;
