@@ -428,6 +428,23 @@ CFAbsoluteTime serverActivity;
     return [[STOMPSubscription alloc] initWithClient:self identifier:identifier];
 }
 
+- (STOMPSubscription *)subscribeToWithoutRegistration:(NSString *)destination
+                                              headers:(NSDictionary *)headers
+                                       messageHandler:(STOMPMessageHandler)handler {
+  
+  NSMutableDictionary *subHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
+  subHeaders[kHeaderDestination] = destination;
+  NSString *identifier = subHeaders[kHeaderID];
+  if (!identifier) {
+    identifier = [NSString stringWithFormat:@"sub-%d", idGenerator++];
+    subHeaders[kHeaderID] = identifier;
+  }
+  self.subscriptions[identifier] = handler;
+   NSLog(@"SUBSCRIBE WITHOUT SERVER REGISTRATION: %@", identifier);
+  return [[STOMPSubscription alloc] initWithClient:self identifier:identifier];
+}
+
+
 - (STOMPTransaction *)begin {
     NSString *identifier = [NSString stringWithFormat:@"tx-%d", idGenerator++];
     return [self begin:identifier];

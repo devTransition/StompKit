@@ -111,6 +111,9 @@ typedef void (^STOMPMessageHandler)(STOMPMessage *message);
 - (STOMPSubscription *)subscribeTo:(NSString *)destination
                            headers:(NSDictionary *)headers
                     messageHandler:(STOMPMessageHandler)handler;
+- (STOMPSubscription *)subscribeToWithoutRegistration:(NSString *)destination
+                                              headers:(NSDictionary *)headers
+                                       messageHandler:(STOMPMessageHandler)handler;
 
 - (STOMPTransaction *)begin;
 - (STOMPTransaction *)begin:(NSString *)identifier;
